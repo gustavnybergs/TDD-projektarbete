@@ -1,4 +1,5 @@
 package com.bank.service;
+// Testar affärslogik relaterad till konton
 
 import com.bank.model.Card;
 import com.bank.repository.CardRepository;
