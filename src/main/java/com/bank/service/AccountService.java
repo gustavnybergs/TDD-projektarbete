@@ -40,7 +40,7 @@ public class AccountService {
      * @return Det uppdaterade kontot om det lyckas, annars null
      */
     public Account updatedBalance(String accountNumber, double newBalance) {
-        // Hmta befintligt konto
+        // Hämta befintligt konto
         Account account = getAccount(accountNumber);
         if (account == null) {
             return null; // returnerar null när existerande konto som ska uppdateras inte finns.
