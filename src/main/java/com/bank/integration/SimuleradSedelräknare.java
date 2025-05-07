@@ -1,5 +1,4 @@
-package com.atm.integration;
-import com.atm.interfaces.Sedelräknare;
+package com.bank.integration;
 
 import java.util.Map;
 

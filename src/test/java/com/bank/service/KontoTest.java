@@ -1,4 +1,6 @@
-package com.test.service;
+// Tidigare test för en konto klass men vi valde Account klass
+/*
+package com.bank.service;
 
 import com.atm.model.Konto;
 import org.junit.jupiter.api.Test;
@@ -37,3 +39,4 @@ class KontoTest {
         assertEquals(0, konto.getSaldo());
     }
 }
+*/

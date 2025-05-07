@@ -31,6 +31,10 @@ public class AccountService {
         return accountRepository.findByAccountNumber(accountNumber);
     }
 
+    public AccountRepository getAccountRepository() {
+        return accountRepository;
+    }
+
     /**
      * Uppdaterar saldot på ett befintligt konto.
      * Eftersom Account-klassen är immutable skapas ett nytt konto med

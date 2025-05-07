@@ -1,4 +1,4 @@
-package com.atm.integration;
+package com.bank.integration;
 
 public class Transaktionslogg {
     public void loggaInsättning(String kontonummer, int belopp) {

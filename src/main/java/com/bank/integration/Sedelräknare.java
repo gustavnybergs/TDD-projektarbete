@@ -1,4 +1,4 @@
-package com.atm.interfaces;
+package com.bank.integration;
 
 import java.util.Map;
 

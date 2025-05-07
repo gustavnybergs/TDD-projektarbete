@@ -1,4 +1,4 @@
-package com.test.service;
+package com.bank.service;
 
 public class SimuleradSedelräknareTest {
 }
