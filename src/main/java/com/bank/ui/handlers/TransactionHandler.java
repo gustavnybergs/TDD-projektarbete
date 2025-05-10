@@ -1,6 +1,7 @@
 package com.bank.ui.handlers;
 
 import com.bank.model.Account;
+import com.bank.service.AccountService;
 import com.bank.service.InsättningsService;
 import com.bank.integration.SimuleradSedelräknare;
 
@@ -31,6 +32,69 @@ public class TransactionHandler {
         this.scanner = scanner;
         this.insättningsService = insättningsService;
         this.accountHandler = accountHandler;
+    }
+
+    /**
+     * Hanterar processen för att ta ut pengar från ett konto.
+     * Denna metod guidar användaren genom hela uttagsprocessen:
+     * - Välja konto
+     * - Ange belopp
+     * - Bekräfta uttaget
+     * - Generera kvitto (om önskat)
+     *
+     * Metoden inkluderar validering och felhantering för användarindata.
+     */
+    public void handleWithdrawal() {
+        // Låt användaren välja konto
+        Account account = accountHandler.selectAccount();
+        if (account == null) return;
+
+        // Visa aktuellt saldo
+        System.out.println("Aktuellt saldo: " + account.getFormattedBalance());
+
+        // Låt användaren ange belopp
+        System.out.print("Ange belopp att ta ut: ");
+        double amount;
+        try {
+            amount = Double.parseDouble(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println("Ogiltigt belopp. Försök igen.");
+            return;
+        }
+
+        // Försök genomföra uttaget
+        try {
+            AccountService accountService = accountHandler.getAccountService();
+
+            // Bekräfta uttaget med användaren
+            System.out.print("Bekräfta uttag av " + amount + " kr? (Y/N): ");
+            String confirm = scanner.nextLine().trim().toUpperCase();
+
+            if (confirm.equals("Y")) {
+                boolean success = accountService.withdraw(account.getAccountNumber(), amount);
+
+                if (success) {
+                    System.out.println("Uttag genomfört. Ta dina pengar.");
+
+                    // Erbjud kvitto
+                    System.out.print("Vill du ha kvitto? (Y/N): ");
+                    String receipt = scanner.nextLine().trim().toUpperCase();
+                    if (receipt.equals("Y")) {
+                        System.out.println("Kvitto: Du tog ut " + amount + " kr från konto " +
+                                account.getAccountNumber());
+                        Account updatedAccount = accountService.getAccount(account.getAccountNumber());
+                        System.out.println("Nytt saldo: " + updatedAccount.getFormattedBalance());
+                    }
+                } else {
+                    System.out.println("Uttaget misslyckades. Kontakta kundtjänst.");
+                }
+            } else {
+                System.out.println("Uttag avbrutet.");
+            }
+        } catch (IllegalArgumentException e) {
+            // Hantera fel som kan uppstå vid uttag
+            System.out.println("Fel: " + e.getMessage());
+        }
     }
 
     /**

@@ -113,18 +113,24 @@ public class KonsolMeny {
      * Visar huvudmenyn och hanterar användarens val.
      * Delegerar funktionalitet till respektive handler baserat på användarens val.
      */
+    /**
+     * Visar huvudmenyn och hanterar användarens val.
+     * Delegerar funktionalitet till respektive handler baserat på användarens val.
+     */
     private void showMainMenu() {
         while (true) {
             System.out.println("\n--- Bankomat Huvudmeny ---");
             System.out.println("1. Sätt in pengar");
-            System.out.println("2. Visa saldo");
+            System.out.println("2. Ta ut pengar");    // Nytt alternativ
+            System.out.println("3. Visa saldo");      // Numret ändrat
             System.out.println("0. Avsluta");
             System.out.print("Välj ett alternativ: ");
             String val = scanner.nextLine();
 
             switch (val) {
                 case "1" -> transactionHandler.handleDeposit();
-                case "2" -> accountHandler.showBalance();
+                case "2" -> transactionHandler.handleWithdrawal();  // Nytt alternativ
+                case "3" -> accountHandler.showBalance();          // Numret ändrat
                 case "0" -> {
                     System.out.println("Avslutar. Hej då!");
                     return;

@@ -82,6 +82,9 @@ public class AccountHandler {
         System.out.println("Ogiltigt val.");
         return null;
     }
+    public AccountService getAccountService() {
+        return accountService;
+    }
 
     /**
      * Hämtar de konton som är tillgängliga för den autentiserade användaren.

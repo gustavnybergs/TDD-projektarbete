@@ -92,6 +92,4 @@ class InsättningsServiceTest {
             return newAccount;
         }
     }
-
-
 }

@@ -48,7 +48,6 @@ public class AuthenticationHandler {
 
             System.out.print("Ange din PIN-kod: ");
             String pin = scanner.nextLine().trim();
-            System.out.println("PIN: " + ui.maskSensitiveInput(pin));
 
             AuthenticationResult result = authService.authenticate(cardNumber, pin);
 

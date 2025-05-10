@@ -65,6 +65,37 @@ public class AccountService {
     }
 
     /**
+     * Tar ut ett belopp från ett konto om det finns tillräckligt med saldo.
+     * Metoden validerar beloppet och kontots saldo innan uttaget genomförs.
+     *
+     * @param accountNumber Kontonumret för kontot
+     * @param amount Beloppet som ska tas ut
+     * @return true om uttaget lyckades, annars false
+     * @throws IllegalArgumentException om beloppet är ogiltigt eller saldot otillräckligt
+     */
+    public boolean withdraw(String accountNumber, double amount) {
+        // Kontrollera att beloppet är positivt
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Belopp måste vara större än noll");
+        }
+
+        // Hämta kontot
+        Account account = getAccount(accountNumber);
+        if (account == null) {
+            return false;
+        }
+
+        // Kontrollera om det finns tillräckligt med saldo
+        if (account.getBalance() < amount) {
+            throw new IllegalArgumentException("Otillräckligt saldo");
+        }
+
+        // Uppdatera saldot (minskar med uttagsbeloppet)
+        updatedBalance(accountNumber, account.getBalance() - amount);
+        return true;
+    }
+
+    /**
      * Kontrollerar om ett konto med angivet kontonummer existerar.
      * @param accountNumber Kontonumret som ska kontrolleras
      * @return true om kontot existerar, annars false
