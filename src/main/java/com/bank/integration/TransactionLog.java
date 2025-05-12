@@ -1,7 +1,7 @@
 package com.bank.integration;
 
 // Klass som ansvarar för att logga insättningar
-public class Transaktionslogg {
+public class TransactionLog {
 
     // Metod som loggar en insättning till konsolen
     // kontonummer - det konto som fick insättningen

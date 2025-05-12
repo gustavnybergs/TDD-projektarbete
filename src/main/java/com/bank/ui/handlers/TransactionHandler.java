@@ -2,8 +2,8 @@ package com.bank.ui.handlers;
 
 import com.bank.model.Account;
 import com.bank.service.AccountService;
-import com.bank.service.InsättningsService;
-import com.bank.integration.SimuleradSedelräknare;
+import com.bank.service.DepositService;
+import com.bank.integration.SimulatedNoteCounter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,20 +17,20 @@ import java.util.Scanner;
 
 public class TransactionHandler {
     private final Scanner scanner;
-    private final InsättningsService insättningsService;
+    private final DepositService depositService;
     private final AccountHandler accountHandler;
 
     /**
      * Skapar en ny TransactionHandler med angivna beroenden.
      *
      * @param scanner Scanner för inläsning av användarindata
-     * @param insättningsService Service för att hantera insättningar
+     * @param depositService Service för att hantera insättningar
      * @param accountHandler Handler för att välja konton
      */
-    public TransactionHandler(Scanner scanner, InsättningsService insättningsService,
+    public TransactionHandler(Scanner scanner, DepositService depositService,
                               AccountHandler accountHandler) {
         this.scanner = scanner;
-        this.insättningsService = insättningsService;
+        this.depositService = depositService;
         this.accountHandler = accountHandler;
     }
 
@@ -117,13 +117,13 @@ public class TransactionHandler {
             }
         }
 
-        int summa = new SimuleradSedelräknare().räknaOchVerifiera(sedlar);
+        int summa = new SimulatedNoteCounter().räknaOchVerifiera(sedlar);
         System.out.println("Totalt att sätta in: " + summa + " kr");
         System.out.print("Bekräfta insättning? (Y/N): ");
         String bekräfta = scanner.nextLine().trim().toUpperCase();
 
         if (bekräfta.equals("Y")) {
-            insättningsService.sättIn(konto.getAccountNumber(), sedlar, true);
+            depositService.sättIn(konto.getAccountNumber(), sedlar, true);
             System.out.print("Vill du ha kvitto? (Y/N): ");
             String kvitto = scanner.nextLine().trim().toUpperCase();
             if (kvitto.equals("Y")) {

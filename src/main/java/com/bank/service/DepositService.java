@@ -1,25 +1,25 @@
 package com.bank.service;
 
-import com.bank.integration.Transaktionslogg;
-import com.bank.integration.Sedelräknare;
+import com.bank.integration.TransactionLog;
+import com.bank.integration.NoteCounter;
 import com.bank.model.Account;
 
 import java.util.Map;
 
 // Tjänst för att hantera insättningar till ett konto
-public class InsättningsService {
+public class DepositService {
 
     // Använder Sedelräknare för att räkna summan av sedlar
-    private final Sedelräknare räknare;
+    private final NoteCounter räknare;
 
     // Använder Transaktionslogg för att logga insättningen
-    private final Transaktionslogg logg;
+    private final TransactionLog logg;
 
     // Använder AccountService för att hämta och uppdatera konton
     private final AccountService accountService;
 
     // Konstruktor – tar emot de komponenter som behövs för insättning
-    public InsättningsService(Sedelräknare räknare, Transaktionslogg logg, AccountService accountService) {
+    public DepositService(NoteCounter räknare, TransactionLog logg, AccountService accountService) {
         this.räknare = räknare;
         this.logg = logg;
         this.accountService = accountService;
