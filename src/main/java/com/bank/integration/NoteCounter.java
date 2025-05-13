@@ -2,6 +2,6 @@ package com.bank.integration;
 
 import java.util.Map;
 
-public interface Sedelräknare {
+public interface NoteCounter {
     int räknaOchVerifiera(Map<Integer, Integer> sedlar);
 }

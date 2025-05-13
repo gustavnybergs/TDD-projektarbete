@@ -4,9 +4,9 @@ import com.bank.model.Card;
 import com.bank.model.Account;
 import com.bank.service.AccountService;
 import com.bank.service.AuthenticationService;
-import com.bank.service.InsättningsService;
-import com.bank.integration.SimuleradSedelräknare;
-import com.bank.integration.Transaktionslogg;
+import com.bank.service.DepositService;
+import com.bank.integration.SimulatedNoteCounter;
+import com.bank.integration.TransactionLog;
 import com.bank.repository.AccountRepository;
 import com.bank.repository.CardRepository;
 import com.bank.repository.InMemoryAccountRepository;
@@ -23,7 +23,7 @@ import java.util.Scanner;
  * och koordinerar de olika handlers som hanterar specifika delar av funktionaliteten.
  */
 
-public class KonsolMeny {
+public class ConsoleMeny {
     private final Scanner scanner = new Scanner(System.in);
     private final AuthenticationHandler authHandler;
     private final AccountHandler accountHandler;
@@ -34,7 +34,7 @@ public class KonsolMeny {
      * Initierar alla nödvändiga services, repositories och handlers.
      */
 
-    public KonsolMeny() {
+    public ConsoleMeny() {
         // Initiera repositories
         AccountRepository accountRepository = new InMemoryAccountRepository();
         CardRepository cardRepository = new InMemoryCardRepository();
@@ -52,11 +52,11 @@ public class KonsolMeny {
         accountHandler = new AccountHandler(scanner, accountService);
 
         // Initiera övriga serviceklasser
-        var räknare = new SimuleradSedelräknare();
-        var logg = new Transaktionslogg();
-        InsättningsService insättningsService = new InsättningsService(räknare, logg, accountService);
+        var räknare = new SimulatedNoteCounter();
+        var logg = new TransactionLog();
+        DepositService depositService = new DepositService(räknare, logg, accountService);
 
-        transactionHandler = new TransactionHandler(scanner, insättningsService, accountHandler);
+        transactionHandler = new TransactionHandler(scanner, depositService, accountHandler);
     }
 
     /**

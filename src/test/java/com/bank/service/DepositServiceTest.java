@@ -1,10 +1,9 @@
 package com.bank.service;
 
-import com.bank.integration.SimuleradSedelräknare;
-import com.bank.integration.Transaktionslogg;
+import com.bank.integration.SimulatedNoteCounter;
+import com.bank.integration.TransactionLog;
 import com.bank.model.Account;
-import com.bank.integration.Sedelräknare;
-import com.bank.service.InsättningsService;
+import com.bank.integration.NoteCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,9 +12,9 @@ import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class InsättningsServiceTest {
+class DepositServiceTest {
 
-    private InsättningsService service;
+    private DepositService service;
     private Account account;
     private AccountService accountService;
 
@@ -25,9 +24,9 @@ class InsättningsServiceTest {
         accountService = new TestAccountService();
 
         // Använd korrekt implementation
-        Sedelräknare räknare = new SimuleradSedelräknare();
-        Transaktionslogg logg = new Transaktionslogg();
-        service = new InsättningsService(räknare, logg, accountService);
+        NoteCounter räknare = new SimulatedNoteCounter();
+        TransactionLog logg = new TransactionLog();
+        service = new DepositService(räknare, logg, accountService);
 
         // Skapa ett testkonto - Account är immutable så vi skapar det via AccountService
         account = new Account("1234", "Testkonto", 1000.0);
@@ -41,7 +40,7 @@ class InsättningsServiceTest {
 
         // Hämta det uppdaterade kontot och kontrollera saldot
         Account updatedAccount = accountService.getAccount("1234");
-        assertEquals(1400.0, updatedAccount.getBalance(), "Salot bör ha uppdaterats med 400 kr");
+        assertEquals(1400.0, updatedAccount.getBalance(), "Saldot bör ha uppdaterats med 400 kr");
     }
 
     @Test

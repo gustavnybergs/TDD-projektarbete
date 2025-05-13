@@ -67,7 +67,7 @@ public class AccountServiceTest {
         Account account = accountService.getAccount("99999");
 
         // Assert - Verifiera att resultatet är null
-        assertNull(account, "Method should return nul for non existent account");
+        assertNull(account, "Method should return null for non existent account");
     }
 
     /**

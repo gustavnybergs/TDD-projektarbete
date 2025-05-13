@@ -2,7 +2,7 @@ package com.bank.integration;
 
 import java.util.Map;
 
-public class SimuleradSedelräknare implements Sedelräknare {
+public class SimulatedNoteCounter implements NoteCounter {
 
     public int räknaOchVerifiera(Map<Integer, Integer> sedlar) {
         int summa = 0;
