@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Testklass för AccountService.
  *
  * Testklassen använder en InMemoryAccountRepository för att isolera testerna från externa
- * beroenden och fokuserar enbart på att verifiera AccountService-logiken.
+ * beroenden och fokuseras enbart på att verifiera AccountService-logiken.
+ *
+ * Uppdaterad för att använda nya Result-klasser för bättre felhantering.
  */
 
 public class AccountServiceTest {
@@ -112,22 +114,31 @@ public class AccountServiceTest {
 
     /**
      * Testar att accountExists-metoden korrekt identifierar om ett konto finns eller inte.
+     * Uppdaterad för att använda OperationResult istället för boolean.
      *
      * Verifierar:
-     * 1. Metoden returnerar true för existerande konton
-     * 2. Metoden returnerar false för icke-existerande konton
+     * 1. Metoden returnerar success för existerande konton
+     * 2. Metoden returnerar failure med rätt error code för icke-existerande konton
      */
     @Test
     void shouldCheckIfAccountExists() {
-        // Act & Assert - Anropa metoden och verifiera resultatet
-        assertTrue(accountService.accountExists("12345"), "Should return true for existing account");
-        assertFalse(accountService.accountExists("99999"), "Should return false for non existing account");
+        // Act & Assert för existerande konto
+        OperationResult existingAccountResult = accountService.accountExists("12345");
+        assertTrue(existingAccountResult.isSuccess(), "Should return success for existing account");
+        assertEquals("Kontot existerar", existingAccountResult.getMessage());
+
+        // Act & Assert för icke-existerande konto
+        OperationResult nonExistentAccountResult = accountService.accountExists("99999");
+        assertFalse(nonExistentAccountResult.isSuccess(), "Should return failure for non existing account");
+        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, nonExistentAccountResult.getErrorCode());
+        assertEquals("Kontot hittades inte", nonExistentAccountResult.getMessage());
     }
 
     /**
-     * Testar att hasSufficientFunds-metoden korrekt bedömer om ett konto har tillräckligt med saldo.
+     * Testar att hasEnoughBalance-metoden korrekt bedömer om ett konto har tillräckligt med saldo.
+     * Uppdaterad för att använda OperationResult istället för boolean.
      *
-     * Testar flera olika scenarios:
+     * Testar flera olika scenarion:
      * 1. Konto med mer saldo än det efterfrågade beloppet
      * 2. Konto med exakt samma saldo som det efterfrågade beloppet
      * 3. Konto med mindre saldo än det efterfrågade beloppet
@@ -135,20 +146,26 @@ public class AccountServiceTest {
      */
     @Test
     void shouldVerifyIfAccountCanAffordRequestedAmount() {
-        // Act & Assert - Anropa metoden och verifiera resultatet för olika scenarios
-
         // Test Case 1: Kontot har mer pengar än begärt belopp (5000 > 3000)
+        OperationResult sufficientResult = accountService.hasEnoughBalance("12345", 3000.0);
+        assertTrue(sufficientResult.isSuccess(), "Ska returnera success när saldot är tillräckligt");
+        assertEquals("Tillräckligt saldo tillgängligt", sufficientResult.getMessage());
+
         // Test Case 2: Kontot har exakt samma belopp som begärt (5000 = 5000)
+        OperationResult exactResult = accountService.hasEnoughBalance("12345", 5000.0);
+        assertTrue(exactResult.isSuccess(), "Ska returnera success när saldot är exakt lika med begärt belopp");
+
         // Test Case 3: Kontot har mindre pengar än begärt belopp (5000 < 6000)
+        OperationResult insufficientResult = accountService.hasEnoughBalance("12345", 6000.0);
+        assertFalse(insufficientResult.isSuccess(), "Ska returnera failure när saldot är otillräckligt");
+        assertEquals(ErrorCode.INSUFFICIENT_FUNDS, insufficientResult.getErrorCode());
+        assertTrue(insufficientResult.getMessage().contains("Otillräckligt saldo"));
+
         // Test Case 4: Kontot existerar inte
-        assertTrue(accountService.hasEnoughBalance("12345", 3000.0),
-                "Ska returnera true när saldot är tillräckligt");
-        assertTrue(accountService.hasEnoughBalance("12345", 5000.0),
-                "Ska returnera true när saldot är exakt lika med begärt belopp");
-        assertFalse(accountService.hasEnoughBalance("12345", 6000.0),
-                "Ska returnera false när saldot är otillräckligt");
-        assertFalse(accountService.hasEnoughBalance("99999", 1000.0),
-                "Ska returnera false för icke-existerande konto");
+        OperationResult nonExistentResult = accountService.hasEnoughBalance("99999", 1000.0);
+        assertFalse(nonExistentResult.isSuccess(), "Ska returnera failure för icke-existerande konto");
+        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, nonExistentResult.getErrorCode());
+        assertEquals("Kontot hittades inte", nonExistentResult.getMessage());
     }
 
     /**

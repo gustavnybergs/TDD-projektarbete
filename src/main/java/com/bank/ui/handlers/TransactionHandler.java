@@ -2,8 +2,9 @@ package com.bank.ui.handlers;
 
 import com.bank.model.Account;
 import com.bank.service.AccountService;
-import com.bank.service.DepositService;
+import com.bank.service.TransactionResult;
 import com.bank.integration.SimulatedNoteCounter;
+import com.bank.util.BankConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,38 +12,30 @@ import java.util.Scanner;
 
 /**
  * Hanterar transaktioner i bankomatgränssnittet.
- * Denna klass ansvarar för att hantera insättningar och andra transaktionsrelaterade
- * operationer, såsom att samla in information om sedlar och bekräfta transaktioner.
+ * Denna klass ansvarar för att hantera insättningar och uttag med bättre felhantering
+ * genom användning av TransactionResult och OperationResult.
+ *
+ * Uppdaterad för att använda AccountService för både uttag och insättningar.
  */
 
 public class TransactionHandler {
     private final Scanner scanner;
-    private final DepositService depositService;
     private final AccountHandler accountHandler;
 
     /**
      * Skapar en ny TransactionHandler med angivna beroenden.
      *
      * @param scanner Scanner för inläsning av användarindata
-     * @param depositService Service för att hantera insättningar
-     * @param accountHandler Handler för att välja konton
+     * @param accountHandler Handler för att välja konton och komma åt AccountService
      */
-    public TransactionHandler(Scanner scanner, DepositService depositService,
-                              AccountHandler accountHandler) {
+    public TransactionHandler(Scanner scanner, AccountHandler accountHandler) {
         this.scanner = scanner;
-        this.depositService = depositService;
         this.accountHandler = accountHandler;
     }
 
     /**
      * Hanterar processen för att ta ut pengar från ett konto.
-     * Denna metod guidar användaren genom hela uttagsprocessen:
-     * - Välja konto
-     * - Ange belopp
-     * - Bekräfta uttaget
-     * - Generera kvitto (om önskat)
-     *
-     * Metoden inkluderar validering och felhantering för användarindata.
+     * Uppdaterad för att använda TransactionResult för bättre felhantering.
      */
     public void handleWithdrawal() {
         // Låt användaren välja konto
@@ -62,76 +55,93 @@ public class TransactionHandler {
             return;
         }
 
-        // Försök genomföra uttaget
-        try {
-            AccountService accountService = accountHandler.getAccountService();
+        AccountService accountService = accountHandler.getAccountService();
 
-            // Bekräfta uttaget med användaren
-            System.out.print("Bekräfta uttag av " + amount + " kr? (Y/N): ");
-            String confirm = scanner.nextLine().trim().toUpperCase();
+        // Bekräfta uttaget med användaren - använd konstant
+        System.out.print("Bekräfta uttag av " + amount + " kr? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
+        String confirm = scanner.nextLine().trim().toUpperCase();
 
-            if (confirm.equals("Y")) {
-                boolean success = accountService.withdraw(account.getAccountNumber(), amount);
+        if (confirm.equals(BankConstants.CONFIRM_YES)) {
+            // Använd den nya withdraw-metoden med TransactionResult
+            TransactionResult result = accountService.withdraw(account.getAccountNumber(), amount);
 
-                if (success) {
-                    System.out.println("Uttag genomfört. Ta dina pengar.");
+            if (result.isSuccess()) {
+                System.out.println("Uttag genomfört. Ta dina pengar.");
 
-                    // Erbjud kvitto
-                    System.out.print("Vill du ha kvitto? (Y/N): ");
-                    String receipt = scanner.nextLine().trim().toUpperCase();
-                    if (receipt.equals("Y")) {
-                        System.out.println("Kvitto: Du tog ut " + amount + " kr från konto " +
-                                account.getAccountNumber());
-                        Account updatedAccount = accountService.getAccount(account.getAccountNumber());
-                        System.out.println("Nytt saldo: " + updatedAccount.getFormattedBalance());
+                // Erbjud kvitto - använd konstant
+                System.out.print("Vill du ha kvitto? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
+                String receipt = scanner.nextLine().trim().toUpperCase();
+                if (receipt.equals(BankConstants.CONFIRM_YES)) {
+                    System.out.println("Kvitto: Du tog ut " + amount + " kr från konto " +
+                            account.getAccountNumber());
+                    // Visa nytt saldo från TransactionResult
+                    if (result.getNewBalance().isPresent()) {
+                        System.out.println("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
                     }
-                } else {
-                    System.out.println("Uttaget misslyckades. Kontakta kundtjänst.");
                 }
             } else {
-                System.out.println("Uttag avbrutet.");
+                // Visa detaljerat felmeddelande från TransactionResult
+                System.out.println("Uttaget misslyckades: " + result.getMessage());
             }
-        } catch (IllegalArgumentException e) {
-            // Hantera fel som kan uppstå vid uttag
-            System.out.println("Fel: " + e.getMessage());
+        } else {
+            System.out.println("Uttag avbrutet.");
         }
     }
 
     /**
      * Hanterar en insättningsprocess.
-     * Låter användaren välja konto, ange antal sedlar, och bekräfta insättningen.
-     * Om användaren önskar, skrivs ett kvitto ut efter slutförd insättning.
+     * Uppdaterad för att använda AccountService istället för DepositService.
      */
     public void handleDeposit() {
-        Account konto = accountHandler.selectAccount();
-        if (konto == null) return;
+        Account account = accountHandler.selectAccount();
+        if (account == null) return;
 
-        Map<Integer, Integer> sedlar = new HashMap<>();
+        Map<Integer, Integer> notes = new HashMap<>();
         System.out.println("Ange antal sedlar för varje valör (0 om inga):");
-        int[] valörer = {100, 200, 500};
-        for (int valör : valörer) {
-            System.out.print(valör + " kr: ");
-            int antal = Integer.parseInt(scanner.nextLine());
-            if (antal > 0) {
-                sedlar.put(valör, antal);
+
+        // Använd konstant istället för hardcoded array
+        for (int denomination : BankConstants.VALID_DENOMINATIONS) {
+            System.out.print(denomination + " " + BankConstants.CURRENCY_SYMBOL + ": ");
+            try {
+                int count = Integer.parseInt(scanner.nextLine());
+                if (count > 0) {
+                    notes.put(denomination, count);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Ogiltigt antal för " + denomination + " " + BankConstants.CURRENCY_SYMBOL + " sedlar.");
+                return;
             }
         }
 
-        int summa = new SimulatedNoteCounter().räknaOchVerifiera(sedlar);
-        System.out.println("Totalt att sätta in: " + summa + " kr");
-        System.out.print("Bekräfta insättning? (Y/N): ");
-        String bekräfta = scanner.nextLine().trim().toUpperCase();
+        try {
+            int total = new SimulatedNoteCounter().countAndVerify(notes);
+            System.out.println("Totalt att sätta in: " + total + " " + BankConstants.CURRENCY_SYMBOL);
 
-        if (bekräfta.equals("Y")) {
-            depositService.sättIn(konto.getAccountNumber(), sedlar, true);
-            System.out.print("Vill du ha kvitto? (Y/N): ");
-            String kvitto = scanner.nextLine().trim().toUpperCase();
-            if (kvitto.equals("Y")) {
-                System.out.println("Kvitto: Du satte in " + summa + " kr på konto " +
-                        konto.getAccountNumber());
+            // Använd konstanter för bekräftelse
+            System.out.print("Bekräfta insättning? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
+            String confirm = scanner.nextLine().trim().toUpperCase();
+
+            // Använd AccountService för insättning nu!
+            AccountService accountService = accountHandler.getAccountService();
+            TransactionResult result = accountService.deposit(account.getAccountNumber(), notes, confirm.equals(BankConstants.CONFIRM_YES));
+
+            if (result.isSuccess()) {
+                System.out.print("Vill du ha kvitto? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
+                String receipt = scanner.nextLine().trim().toUpperCase();
+                if (receipt.equals(BankConstants.CONFIRM_YES)) {
+                    System.out.println("Kvitto: Du satte in " + total + " " + BankConstants.CURRENCY_SYMBOL + " på konto " +
+                            account.getAccountNumber());
+                    // Visa nytt saldo från TransactionResult
+                    if (result.getNewBalance().isPresent()) {
+                        System.out.println("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
+                    }
+                }
+            } else {
+                // Visa detaljerat felmeddelande från TransactionResult
+                System.out.println("Insättningen misslyckades: " + result.getMessage());
             }
-        } else {
-            System.out.println("Insättning avbruten.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Fel: " + e.getMessage());
         }
     }
 }

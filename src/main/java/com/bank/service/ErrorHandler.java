@@ -6,6 +6,8 @@ import com.bank.model.Account;
  * Hanterar felmeddelanden, validering och loggning i bankomatsystemet.
  * Denna klass ansvarar för att validera transaktioner, generera användaranpassade
  * felmeddelanden och logga fel för felsökning.
+ *
+ * Uppdaterad för att använda nya OperationResult-klasser för bättre felhantering.
  */
 
 public class ErrorHandler {
@@ -22,14 +24,16 @@ public class ErrorHandler {
 
     /**
      * Validerar ett uttag genom att kontrollera konto och belopp.
+     * Uppdaterad för att använda OperationResult från AccountService.
      *
      * @param accountNumber Kontonumret för uttaget
      * @param amount Beloppet som ska tas ut
      * @return Ett ValidationResult som indikerar om uttaget är giltigt
      */
-    public ValidationResult validateWithdrawal (String accountNumber, double amount) {
-        // Kontrollera att kontot existerar
-        if (!accountService.accountExists(accountNumber)) {
+    public ValidationResult validateWithdrawal(String accountNumber, double amount) {
+        // Kontrollera att kontot existerar med OperationResult
+        OperationResult accountExistsResult = accountService.accountExists(accountNumber);
+        if (!accountExistsResult.isSuccess()) {
             return ValidationResult.failure("Account does not exist");
         }
 
@@ -38,8 +42,9 @@ public class ErrorHandler {
             return ValidationResult.failure("Please enter a valid amount");
         }
 
-        // Kontrollera att det finns tillräckligt med saldo
-        if (!accountService.hasEnoughBalance(accountNumber, amount)) {
+        // Kontrollera att det finns tillräckligt med saldo med OperationResult
+        OperationResult balanceResult = accountService.hasEnoughBalance(accountNumber, amount);
+        if (!balanceResult.isSuccess()) {
             Account account = accountService.getAccount(accountNumber);
             double balance = account.getBalance();
             return ValidationResult.failure("Insufficient balance. Available: " +

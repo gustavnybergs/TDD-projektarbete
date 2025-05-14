@@ -1,6 +1,5 @@
 package com.bank.integration;
 
-import com.bank.integration.SimulatedNoteCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,14 +26,14 @@ class SimulatedNoteCounterTest {
      * 2 x 100 + 1 x 200 + 1 x 500 = 900
      */
     @Test
-    void räknaOchVerifiera_shouldReturnCorrectSum_forValidNotes() {
+    void countAndVerify_shouldReturnCorrectSum_forValidNotes() {
         Map<Integer, Integer> sedlar = Map.of(
                 100, 2,   // 200
                 200, 1,   // 200
                 500, 1    // 500
         );
 
-        int summa = counter.räknaOchVerifiera(sedlar);
+        int summa = counter.countAndVerify(sedlar);
 
         assertEquals(900, summa, "Summan av sedlarna borde vara 900");
     }
@@ -44,13 +43,13 @@ class SimulatedNoteCounterTest {
      * Här testas 50 kr som inte är tillåten.
      */
     @Test
-    void räknaOchVerifiera_shouldThrowException_forInvalidNote() {
+    void countAndVerify_shouldThrowException_forInvalidNote() {
         Map<Integer, Integer> ogiltigaSedlar = Map.of(
                 50, 2   // Ogiltig valör
         );
 
         Exception ex = assertThrows(IllegalArgumentException.class, () ->
-                counter.räknaOchVerifiera(ogiltigaSedlar)
+                counter.countAndVerify(ogiltigaSedlar)
         );
 
         assertTrue(ex.getMessage().contains("Ogiltig sedelvalör"), "Felmeddelandet bör indikera ogiltig valör");
@@ -60,10 +59,10 @@ class SimulatedNoteCounterTest {
      * Testar att metoden fungerar även om inga sedlar ges (summan ska vara 0).
      */
     @Test
-    void räknaOchVerifiera_shouldReturnZero_whenNoNotesGiven() {
+    void countAndVerify_shouldReturnZero_whenNoNotesGiven() {
         Map<Integer, Integer> tomt = Map.of();
 
-        int summa = counter.räknaOchVerifiera(tomt);
+        int summa = counter.countAndVerify(tomt);
 
         assertEquals(0, summa, "Summan bör vara 0 när inga sedlar ges");
     }

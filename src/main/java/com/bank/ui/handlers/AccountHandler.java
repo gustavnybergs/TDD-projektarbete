@@ -57,16 +57,16 @@ public class AccountHandler {
      * @return Det valda kontot om ett giltigt val gjordes, annars null
      */
     public Account selectAccount() {
-        List<Account> konton = getAvailableAccounts();
-        if (konton.isEmpty()) {
+        List<Account> accounts = getAvailableAccounts();
+        if (accounts.isEmpty()) {
             System.out.println("Inga konton tillgängliga.");
             return null;
         }
 
         System.out.println("Välj konto:");
-        for (int i = 0; i < konton.size(); i++) {
-            System.out.println((i + 1) + ". Konto " + konton.get(i).getAccountNumber() +
-                    " (" + konton.get(i).getAccountName() + ")");
+        for (int i = 0; i < accounts.size(); i++) {
+            System.out.println((i + 1) + ". Konto " + accounts.get(i).getAccountNumber() +
+                    " (" + accounts.get(i).getAccountName() + ")");
         }
 
         System.out.print("Ditt val: ");
@@ -74,14 +74,15 @@ public class AccountHandler {
 
         try {
             int index = Integer.parseInt(input) - 1;
-            if (index >= 0 && index < konton.size()) {
-                return konton.get(index);
+            if (index >= 0 && index < accounts.size()) {
+                return accounts.get(index);
             }
         } catch (NumberFormatException ignored) {}
 
         System.out.println("Ogiltigt val.");
         return null;
     }
+
     public AccountService getAccountService() {
         return accountService;
     }
