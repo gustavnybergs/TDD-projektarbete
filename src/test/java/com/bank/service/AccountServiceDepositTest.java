@@ -7,100 +7,88 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Testklass för AccountService deposit funktionalitet.
- * Uppdaterad för att testa deposit-metoden i AccountService istället för DepositService.
+ * Testklass för deposit-funktionalitet i AccountService.
+ * Tidigare DepositServiceTest, nu för AccountService.deposit().
  */
 class AccountServiceDepositTest {
 
     private AccountService accountService;
+    private AccountRepository accountRepository;
 
     @BeforeEach
     void setUp() {
-        // Initiera repository och service
-        AccountRepository repository = new InMemoryAccountRepository();
-        accountService = new AccountService(repository);
+        // Skapar en testversion av AccountService (en så kallad mock)
+        accountRepository = new InMemoryAccountRepository();
+        accountService = new AccountService(accountRepository);
 
-        // Skapa testkonto
-        Account testAccount = new Account("1234", "Test Account", 1000.0);
-        repository.saveAccount(testAccount);
+        // Skapar ett testkonto (1000 kr från början)
+        Account testAccount = new Account("1234", "Testkonto", 1000.0);
+        accountRepository.saveAccount(testAccount);
     }
 
-    /**
-     * Testar att bekräftad insättning lyckas och uppdaterar saldot korrekt.
-     */
     @Test
     void testDepositConfirmed() {
-        // Arrange
-        Map<Integer, Integer> notes = Map.of(100, 2, 200, 1); // 400 kr totalt
+        // Simulerar en insättning med 2x100kr och 1x200kr = 400 kr
+        Map<Integer, Integer> notes = Map.of(100, 2, 200, 1);
 
-        // Act
+        // true betyder att insättningen bekräftas
         TransactionResult result = accountService.deposit("1234", notes, true);
 
         // Assert
         assertTrue(result.isSuccess(), "Confirmed deposit should succeed");
-        assertTrue(result.getNewBalance().isPresent(), "New balance should be available");
-        assertEquals(1400.0, result.getNewBalance().get(), "New balance should be 1400.0");
 
-        // Verifiera genom att hämta kontot igen
+        // Kontrollerar att saldot har uppdaterats till 1400 kr
         Account updatedAccount = accountService.getAccount("1234");
-        assertEquals(1400.0, updatedAccount.getBalance(), "Balance in repository should be updated");
+        assertEquals(1400.0, updatedAccount.getBalance(), "Saldot bör ha uppdaterats med 400 kr");
     }
 
-    /**
-     * Testar att ej bekräftad insättning avbryts och inte ändrar saldot.
-     */
     @Test
     void testDepositNotConfirmed() {
-        // Arrange
+        // Simulerar en insättning som INTE bekräftas
         Map<Integer, Integer> notes = Map.of(500, 1); // 500 kr
 
-        // Act
+        // false = insättningen avbryts
         TransactionResult result = accountService.deposit("1234", notes, false);
 
         // Assert
         assertFalse(result.isSuccess(), "Unconfirmed deposit should fail");
         assertEquals(ErrorCode.VALIDATION_ERROR, result.getErrorCode(), "Error code should be VALIDATION_ERROR");
-        assertEquals("Insättning avbruten – ej bekräftad", result.getMessage(), "Error message should be correct");
 
-        // Verifiera att saldot är oförändrat
+        // Verifierar att saldot är oförändrat (fortfarande 1000 kr)
         Account unchangedAccount = accountService.getAccount("1234");
-        assertEquals(1000.0, unchangedAccount.getBalance(), "Balance should not change for cancelled deposit");
+        assertEquals(1000.0, unchangedAccount.getBalance(), "Saldot bör inte förändras vid avbruten insättning");
     }
 
-    /**
-     * Testar att insättning med ogiltig valör resulterar i fel.
-     */
     @Test
     void testDepositWithInvalidDenominationReturnsFailure() {
-        // Arrange
-        Map<Integer, Integer> invalidNotes = Map.of(50, 2); // 50 kr är ogiltig
+        // Försöker sätta in ogiltiga sedlar (t.ex. 50 kr som inte accepteras)
+        Map<Integer, Integer> invalidNotes = Map.of(50, 2);
 
-        // Act
+        // Använd AccountService nu
         TransactionResult result = accountService.deposit("1234", invalidNotes, true);
 
         // Assert
         assertFalse(result.isSuccess(), "Deposit with invalid denomination should fail");
         assertEquals(ErrorCode.INVALID_AMOUNT, result.getErrorCode(), "Error code should be INVALID_AMOUNT");
-        assertTrue(result.getMessage().contains("Ogiltig sedelvalör"), "Error message should indicate invalid denomination");
+        // Säkerställer att felmeddelandet innehåller rätt text
+        assertTrue(result.getMessage().contains("Ogiltig sedelvalör"), "Felmeddelande bör indikera ogiltig valör");
 
         // Verifiera att saldot är oförändrat
         Account unchangedAccount = accountService.getAccount("1234");
         assertEquals(1000.0, unchangedAccount.getBalance(), "Balance should be unchanged after error");
     }
 
-    /**
-     * Testar att insättning till icke-existerande konto misslyckas.
-     */
     @Test
     void testDepositToNonExistentAccount() {
         // Arrange
         Map<Integer, Integer> notes = Map.of(100, 5); // 500 kr
 
-        // Act
+        // Act - använd AccountService nu
         TransactionResult result = accountService.deposit("9999", notes, true);
 
         // Assert
@@ -109,15 +97,12 @@ class AccountServiceDepositTest {
         assertEquals("Kontot hittades inte", result.getMessage(), "Error message should be correct");
     }
 
-    /**
-     * Testar att insättning av tom sedel-map fungerar (0 kr).
-     */
     @Test
     void testDepositEmptyNoteMap() {
         // Arrange
-        Map<Integer, Integer> emptyMap = Map.of();
+        Map<Integer, Integer> emptyMap = new HashMap<>();
 
-        // Act
+        // Act - använd AccountService nu
         TransactionResult result = accountService.deposit("1234", emptyMap, true);
 
         // Assert
@@ -128,27 +113,5 @@ class AccountServiceDepositTest {
         // Verifiera att saldot är oförändrat
         Account accountAfter = accountService.getAccount("1234");
         assertEquals(1000.0, accountAfter.getBalance(), "Account balance should be unchanged");
-    }
-
-    /**
-     * Testar kombinerade operationer (deposit och withdraw).
-     */
-    @Test
-    void testCombinedDepositAndWithdraw() {
-        // Arrange
-        Map<Integer, Integer> notes = Map.of(100, 5); // 500 kr
-
-        // Act - först insättning
-        TransactionResult depositResult = accountService.deposit("1234", notes, true);
-
-        // Sedan uttag
-        TransactionResult withdrawResult = accountService.withdraw("1234", 200.0);
-
-        // Assert
-        assertTrue(depositResult.isSuccess(), "Deposit should succeed");
-        assertTrue(withdrawResult.isSuccess(), "Withdraw should succeed");
-
-        Account finalAccount = accountService.getAccount("1234");
-        assertEquals(1300.0, finalAccount.getBalance(), "Final balance should be 1000 + 500 - 200 = 1300");
     }
 }

@@ -137,16 +137,14 @@ public class AccountService {
     }
 
     /**
-     * Sätter in pengar på ett konto.
-     * Metoden validerar kontot, bekräftelse och sedlar innan insättningen genomförs.
-     *
-     * @param accountNumber Kontonumret för kontot som ska få insättning
-     * @param notes En map med sedelvalörer och antal (t.ex. {500=2, 100=3})
-     * @param confirmed true om användaren bekräftat insättningen
+     * Metod för att sätta in pengar på ett konto
+     * @param accountNumber – kontot att sätta in pengar på
+     * @param notes – en karta med sedelvalörer och antal (t.ex. {500=2, 100=3})
+     * @param confirmed – true om användaren bekräftat insättningen
      * @return TransactionResult med information om insättningen lyckades eller varför den misslyckades
      */
     public TransactionResult deposit(String accountNumber, Map<Integer, Integer> notes, boolean confirmed) {
-        // Hämta kontot
+        // Hämta kontot via AccountService
         Account account = getAccount(accountNumber);
         if (account == null) {
             return TransactionResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
@@ -158,13 +156,15 @@ public class AccountService {
         }
 
         try {
-            // Räkna ihop summan av sedlarna (liknar SimulatedNoteCounter logik)
+            // Räkna ihop summan av sedlarna
             int amount = 0;
+            // Går igenom varje post i Map:en där nyckeln är sedelns valör (t.ex. 100 kr)
+            // och värdet är hur många sådana sedlar det finns
             for (Map.Entry<Integer, Integer> entry : notes.entrySet()) {
-                int denomination = entry.getKey();
-                int count = entry.getValue();
+                int denomination = entry.getKey();   // t.ex. 100, 200, 500
+                int count = entry.getValue();        // hur många sedlar av den valören
 
-                // Validera sedelvalör
+                // Kontrollera att valören är giltig
                 boolean isValid = false;
                 for (int validDenomination : com.bank.util.BankConstants.VALID_DENOMINATIONS) {
                     if (denomination == validDenomination) {
@@ -173,17 +173,19 @@ public class AccountService {
                     }
                 }
 
+                // Om inte, returnera fel
                 if (!isValid) {
                     return TransactionResult.failure("Ogiltig sedelvalör: " + denomination, ErrorCode.INVALID_AMOUNT);
                 }
 
+                // Lägg till värdet av sedlarna i totalsumman
                 amount += denomination * count;
             }
 
             // Uppdatera kontots saldo med det nya beloppet
             Account updatedAccount = updatedBalance(accountNumber, account.getBalance() + amount);
 
-            // Logga insättningen (för enkelhets skull gör vi det direkt här)
+            // Logga insättningen
             System.out.println("Loggad insättning: " + amount + " kr till konto " + accountNumber);
 
             // Skriv ut kvittoinformation (simulerat)
