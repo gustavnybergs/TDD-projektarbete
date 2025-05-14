@@ -4,10 +4,10 @@ package com.bank.integration;
 public class TransactionLog {
 
     // Metod som loggar en insättning till konsolen
-    // accountNumber - det konto som fick insättningen
-    // amount - hur mycket som sattes in
-    public void logDeposit(String accountNumber, int amount) {
+    // kontonummer - det konto som fick insättningen
+    // belopp - hur mycket som sattes in
+    public void loggaInsättning(String kontonummer, int belopp) {
         // Skriver ut ett meddelande om insättningen
-        System.out.println("Loggad insättning: " + amount + " kr till konto " + accountNumber);
+        System.out.println("Loggad insättning: " + belopp + " kr till konto " + kontonummer);
     }
 }

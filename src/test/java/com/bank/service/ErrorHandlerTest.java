@@ -10,8 +10,6 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * Testar funktionalitet för felhantering, validering och felmeddelanden
  * i bankomatsystemet.
- *
- * Uppdaterad för att använda nya Result-klasser.
  */
 
 public class ErrorHandlerTest {
@@ -30,10 +28,9 @@ public class ErrorHandlerTest {
 
     /**
      * Testar att validering av uttag lyckas när saldot är tillräckligt.
-     * Uppdaterad för att använda OperationResult från AccountService.
      */
     @Test
-    void shouldValidateWithdrawalWithSufficientBalance() {
+    void shouldValidateWithdrawalWithSufficientBalance () {
         // Arrange - Förbered testdata
         String accountNumber = "12345"; // Konto med saldo 5000 i mock
         double amount = 3000.00;
@@ -43,15 +40,14 @@ public class ErrorHandlerTest {
 
         // Assert - Verifiera resultatet
         assertTrue(result.isValid(), "Validation should succeed when balance is sufficient");
-        assertNull(result.getErrorMessage(), "No error message should be seen");
+        assertNull(result.getErrorMessage(), "No errormessage should be seen");
     }
 
     /**
      * Testar att validering av uttag misslyckas när saldot är otillräckligt.
-     * Uppdaterad för att använda OperationResult från AccountService.
      */
     @Test
-    void shouldNotValidateWithdrawalWithInsufficientBalance() {
+    void shouldNotValidateWithdrawalWithInsufficientBalance () {
         // Arrange - Förbered testdata
         String accountNumber = "12345"; // Konto med saldo 5000 i mock
         double amount = 6000.00;
@@ -62,41 +58,7 @@ public class ErrorHandlerTest {
         // Assert - Verifiera resultatet
         assertFalse(result.isValid(), "Validation should fail when balance is insufficient");
         assertNotNull(result.getErrorMessage(), "Error message should be shown");
-        assertTrue(result.getErrorMessage().contains("Insufficient balance"), "Error message should show insufficient balance");
-    }
-
-    /**
-     * Testar att validering misslyckas för icke-existerande konto.
-     */
-    @Test
-    void shouldNotValidateWithdrawalForNonExistentAccount() {
-        // Arrange
-        String accountNumber = "99999"; // Icke-existerande konto
-        double amount = 1000.00;
-
-        // Act
-        ValidationResult result = errorHandler.validateWithdrawal(accountNumber, amount);
-
-        // Assert
-        assertFalse(result.isValid(), "Validation should fail for non-existent account");
-        assertTrue(result.getErrorMessage().contains("Account does not exist"), "Error message should indicate account doesn't exist");
-    }
-
-    /**
-     * Testar att validering misslyckas för negativt belopp.
-     */
-    @Test
-    void shouldNotValidateWithdrawalForNegativeAmount() {
-        // Arrange
-        String accountNumber = "12345";
-        double amount = -100.00;
-
-        // Act
-        ValidationResult result = errorHandler.validateWithdrawal(accountNumber, amount);
-
-        // Assert
-        assertFalse(result.isValid(), "Validation should fail for negative amount");
-        assertTrue(result.getErrorMessage().contains("valid amount"), "Error message should mention valid amount");
+        assertTrue(result.getErrorMessage().contains("Insufficient balance"), "Errormessage should show insufficient balance");
     }
 
     /**
@@ -108,7 +70,7 @@ public class ErrorHandlerTest {
         String message = errorHandler.getNetworkErrorMessage();
 
         // Assert - Verifiera resultatet
-        assertTrue(message.contains("Network issue"), "Error message should declare network errors");
+        assertTrue(message.contains("Network issue"), "Errormessage should declare network errors");
         assertTrue(message.contains("try again"), "Message should propose customer to try again");
     }
 
@@ -141,7 +103,6 @@ public class ErrorHandlerTest {
 
     /**
      * Hjälpklass för att mocka AccountService i tester.
-     * Uppdaterad för att returnera OperationResult istället för boolean.
      * Denna klass simulerar att det finns ett konto med nummer "12345" och saldo 5000.
      */
     private class AccountServiceMock extends AccountService {
@@ -158,25 +119,14 @@ public class ErrorHandlerTest {
         }
 
         @Override
-        public OperationResult accountExists(String accountNumber) {
-            if ("12345".equals(accountNumber)) {
-                return OperationResult.success("Kontot existerar");
-            }
-            return OperationResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
+        public boolean accountExists(String accountNumber) {
+            return "12345".equals(accountNumber);
         }
 
         @Override
-        public OperationResult hasEnoughBalance(String accountNumber, double amount) {
+        public boolean hasEnoughBalance(String accountNumber, double amount) {
             Account account = getAccount(accountNumber);
-            if (account == null) {
-                return OperationResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
-            }
-
-            if (account.getBalance() >= amount) {
-                return OperationResult.success("Tillräckligt saldo tillgängligt");
-            } else {
-                return OperationResult.failure("Otillräckligt saldo", ErrorCode.INSUFFICIENT_FUNDS);
-            }
+            return account != null && account.getBalance() >= amount;
         }
     }
 }

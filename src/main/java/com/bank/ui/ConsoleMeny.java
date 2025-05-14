@@ -4,6 +4,9 @@ import com.bank.model.Card;
 import com.bank.model.Account;
 import com.bank.service.AccountService;
 import com.bank.service.AuthenticationService;
+import com.bank.service.DepositService;
+import com.bank.integration.SimulatedNoteCounter;
+import com.bank.integration.TransactionLog;
 import com.bank.repository.AccountRepository;
 import com.bank.repository.CardRepository;
 import com.bank.repository.InMemoryAccountRepository;
@@ -18,11 +21,9 @@ import java.util.Scanner;
  * Huvudklassen för bankomatens användargränssnitt.
  * Denna klass sätter upp systemet, initierar alla nödvändiga komponenter,
  * och koordinerar de olika handlers som hanterar specifika delar av funktionaliteten.
- *
- * Uppdaterad för att använda AccountService för både uttag och insättningar.
  */
 
-public class ConsoleMenu {
+public class ConsoleMeny {
     private final Scanner scanner = new Scanner(System.in);
     private final AuthenticationHandler authHandler;
     private final AccountHandler accountHandler;
@@ -33,7 +34,7 @@ public class ConsoleMenu {
      * Initierar alla nödvändiga services, repositories och handlers.
      */
 
-    public ConsoleMenu() {
+    public ConsoleMeny() {
         // Initiera repositories
         AccountRepository accountRepository = new InMemoryAccountRepository();
         CardRepository cardRepository = new InMemoryCardRepository();
@@ -50,8 +51,12 @@ public class ConsoleMenu {
         authHandler = new AuthenticationHandler(scanner, authService, ui);
         accountHandler = new AccountHandler(scanner, accountService);
 
-        // TransactionHandler behöver nu bara AccountHandler (som har AccountService)
-        transactionHandler = new TransactionHandler(scanner, accountHandler);
+        // Initiera övriga serviceklasser
+        var räknare = new SimulatedNoteCounter();
+        var logg = new TransactionLog();
+        DepositService depositService = new DepositService(räknare, logg, accountService);
+
+        transactionHandler = new TransactionHandler(scanner, depositService, accountHandler);
     }
 
     /**
@@ -108,20 +113,24 @@ public class ConsoleMenu {
      * Visar huvudmenyn och hanterar användarens val.
      * Delegerar funktionalitet till respektive handler baserat på användarens val.
      */
+    /**
+     * Visar huvudmenyn och hanterar användarens val.
+     * Delegerar funktionalitet till respektive handler baserat på användarens val.
+     */
     private void showMainMenu() {
         while (true) {
             System.out.println("\n--- Bankomat Huvudmeny ---");
             System.out.println("1. Sätt in pengar");
-            System.out.println("2. Ta ut pengar");
-            System.out.println("3. Visa saldo");
+            System.out.println("2. Ta ut pengar");    // Nytt alternativ
+            System.out.println("3. Visa saldo");      // Numret ändrat
             System.out.println("0. Avsluta");
             System.out.print("Välj ett alternativ: ");
-            String choice = scanner.nextLine();
+            String val = scanner.nextLine();
 
-            switch (choice) {
+            switch (val) {
                 case "1" -> transactionHandler.handleDeposit();
-                case "2" -> transactionHandler.handleWithdrawal();
-                case "3" -> accountHandler.showBalance();
+                case "2" -> transactionHandler.handleWithdrawal();  // Nytt alternativ
+                case "3" -> accountHandler.showBalance();          // Numret ändrat
                 case "0" -> {
                     System.out.println("Avslutar. Hej då!");
                     return;

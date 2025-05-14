@@ -3,7 +3,6 @@ package com.bank.ui.handlers;
 import com.bank.service.AuthenticationResult;
 import com.bank.service.AuthenticationService;
 import com.bank.ui.UserInterface;
-import com.bank.util.BankConstants;
 
 import java.util.Scanner;
 
@@ -41,8 +40,7 @@ public class AuthenticationHandler {
      */
     public boolean authenticate() {
         int attempts = 0;
-        // Använd konstant istället för hardcoded värde
-        final int MAX_ATTEMPTS = BankConstants.MAX_AUTHENTICATION_ATTEMPTS;
+        final int MAX_ATTEMPTS = 3;
 
         while (attempts < MAX_ATTEMPTS) {
             System.out.print("Ange ditt kortnummer (12 siffror): ");

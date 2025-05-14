@@ -2,7 +2,6 @@ package com.bank.service;
 
 import com.bank.model.Account;
 import com.bank.repository.AccountRepository;
-import java.util.Map;
 
 /**
  * Service-klass för hantering av konton i bankomaten.
@@ -10,8 +9,6 @@ import java.util.Map;
  * Denna klass fungerar som en mellanhand mellan kontroller och datalagring
  * och innehåller affärslogik för att hantera bankkonton såsom
  * kontoinformation, saldokontroll och saldouppdatering.
- *
- * Uppdaterad för att hantera både uttag och insättningar.
  */
 public class AccountService {
     private final AccountRepository accountRepository;
@@ -54,12 +51,12 @@ public class AccountService {
         }
 
         /** Skapa ett nytt konto med uppdaterat saldo (eftersom Account är immutable)
-         * Detta är inte samma sak som att skapa ett nytt bankkonto från användarens perspektiv.
+        * Detta är inte samma sak som att skapa ett nytt bankkonto från användarens perspektiv.
          * Från systemets perspektiv ersätter vi representationen av samma konto
          * med en ny version som har uppdaterat saldo.
-         */
+        */
         Account updatedAccount = new Account(
-                account.getAccountNumber(), account.getAccountName(), newBalance
+            account.getAccountNumber(), account.getAccountName(), newBalance
         );
 
         // ersätter befintligt accountobjekt med updatedAccount med nytt saldo
@@ -68,133 +65,58 @@ public class AccountService {
     }
 
     /**
-     * Kontrollerar om ett konto med angivet kontonummer existerar.
-     * Returnerar detaljerad information om resultatet.
-     *
-     * @param accountNumber Kontonumret som ska kontrolleras
-     * @return OperationResult med information om kontot existerar eller inte
-     */
-    public OperationResult accountExists(String accountNumber) {
-        Account account = getAccount(accountNumber);
-        if (account != null) {
-            return OperationResult.success("Kontot existerar");
-        } else {
-            return OperationResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
-        }
-    }
-
-    /**
-     * Verifierar om ett konto har tillräckligt med pengar för ett begärt belopp.
-     * Returnerar detaljerad information om saldokontroll och eventuella fel.
-     *
-     * @param accountNumber Kontonumret som ska kontrolleras
-     * @param amount Beloppet som ska verifieras mot saldot
-     * @return OperationResult med detaljerad information om saldokontroll
-     */
-    public OperationResult hasEnoughBalance(String accountNumber, double amount) {
-        // Hämtar konto
-        Account account = getAccount(accountNumber);
-
-        if (account == null) {
-            return OperationResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
-        }
-
-        if (account.getBalance() >= amount) {
-            return OperationResult.success("Tillräckligt saldo tillgängligt");
-        } else {
-            return OperationResult.failure("Otillräckligt saldo. Tillgängligt: " + account.getBalance() + " kr, Begärt: " + amount + " kr", ErrorCode.INSUFFICIENT_FUNDS);
-        }
-    }
-
-    /**
      * Tar ut ett belopp från ett konto om det finns tillräckligt med saldo.
      * Metoden validerar beloppet och kontots saldo innan uttaget genomförs.
      *
      * @param accountNumber Kontonumret för kontot
      * @param amount Beloppet som ska tas ut
-     * @return TransactionResult med information om uttaget lyckades eller varför det misslyckades
+     * @return true om uttaget lyckades, annars false
+     * @throws IllegalArgumentException om beloppet är ogiltigt eller saldot otillräckligt
      */
-    public TransactionResult withdraw(String accountNumber, double amount) {
+    public boolean withdraw(String accountNumber, double amount) {
         // Kontrollera att beloppet är positivt
         if (amount <= 0) {
-            return TransactionResult.failure("Belopp måste vara större än noll", ErrorCode.INVALID_AMOUNT);
+            throw new IllegalArgumentException("Belopp måste vara större än noll");
         }
 
         // Hämta kontot
         Account account = getAccount(accountNumber);
         if (account == null) {
-            return TransactionResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
+            return false;
         }
 
         // Kontrollera om det finns tillräckligt med saldo
         if (account.getBalance() < amount) {
-            return TransactionResult.failure("Otillräckligt saldo. Tillgängligt: " + account.getBalance() + " kr", ErrorCode.INSUFFICIENT_FUNDS);
+            throw new IllegalArgumentException("Otillräckligt saldo");
         }
 
         // Uppdatera saldot (minskar med uttagsbeloppet)
-        Account updatedAccount = updatedBalance(accountNumber, account.getBalance() - amount);
-        return TransactionResult.success(updatedAccount.getBalance());
+        updatedBalance(accountNumber, account.getBalance() - amount);
+        return true;
     }
 
     /**
-     * Sätter in pengar på ett konto.
-     * Metoden validerar kontot, bekräftelse och sedlar innan insättningen genomförs.
-     *
-     * @param accountNumber Kontonumret för kontot som ska få insättning
-     * @param notes En map med sedelvalörer och antal (t.ex. {500=2, 100=3})
-     * @param confirmed true om användaren bekräftat insättningen
-     * @return TransactionResult med information om insättningen lyckades eller varför den misslyckades
+     * Kontrollerar om ett konto med angivet kontonummer existerar.
+     * @param accountNumber Kontonumret som ska kontrolleras
+     * @return true om kontot existerar, annars false
      */
-    public TransactionResult deposit(String accountNumber, Map<Integer, Integer> notes, boolean confirmed) {
-        // Hämta kontot
+    public boolean accountExists(String accountNumber) {
+        return getAccount(accountNumber) != null;
+    }
+
+    /**
+     * Verifierar om ett konto har tillräckligt med pengar för ett begärt belopp.
+     *
+     * @param accountNumber Kontonumret som ska kontrolleras
+     * @param amount Beloppet som ska verifieras mot saldot
+     * @return true om kontot existerar och har tillräckligt med pengar, annars false
+     */
+    public boolean hasEnoughBalance (String accountNumber, double amount) {
+        // Hämtar konto
         Account account = getAccount(accountNumber);
-        if (account == null) {
-            return TransactionResult.failure("Kontot hittades inte", ErrorCode.ACCOUNT_NOT_FOUND);
-        }
 
-        // Kontrollera om insättningen är bekräftad av användaren
-        if (!confirmed) {
-            return TransactionResult.failure("Insättning avbruten – ej bekräftad", ErrorCode.VALIDATION_ERROR);
-        }
-
-        try {
-            // Räkna ihop summan av sedlarna (liknar SimulatedNoteCounter logik)
-            int amount = 0;
-            for (Map.Entry<Integer, Integer> entry : notes.entrySet()) {
-                int denomination = entry.getKey();
-                int count = entry.getValue();
-
-                // Validera sedelvalör
-                boolean isValid = false;
-                for (int validDenomination : com.bank.util.BankConstants.VALID_DENOMINATIONS) {
-                    if (denomination == validDenomination) {
-                        isValid = true;
-                        break;
-                    }
-                }
-
-                if (!isValid) {
-                    return TransactionResult.failure("Ogiltig sedelvalör: " + denomination, ErrorCode.INVALID_AMOUNT);
-                }
-
-                amount += denomination * count;
-            }
-
-            // Uppdatera kontots saldo med det nya beloppet
-            Account updatedAccount = updatedBalance(accountNumber, account.getBalance() + amount);
-
-            // Logga insättningen (för enkelhets skull gör vi det direkt här)
-            System.out.println("Loggad insättning: " + amount + " kr till konto " + accountNumber);
-
-            // Skriv ut kvittoinformation (simulerat)
-            System.out.println("Insättning av " + amount + " kr klar.");
-            System.out.println("Vill du ha kvitto? (Simuleras)");
-
-            return TransactionResult.success(updatedAccount.getBalance());
-
-        } catch (Exception e) {
-            return TransactionResult.failure("Fel vid insättning: " + e.getMessage(), ErrorCode.INVALID_AMOUNT);
-        }
+        // Kontrollera om kontot existerar och har tillräckligt med saldo
+        return account != null && account.getBalance() >= amount;
     }
 
     /**
@@ -203,11 +125,11 @@ public class AccountService {
      * @param accountNumber Kontonumret för kontot
      * @return Formaterat saldo som en sträng om kontot finns, annars null
      */
-    public String getFormattedBalance(String accountNumber) {
+    public String getFormattedBalance (String accountNumber) {
         // Hämta kontot
         Account account = getAccount(accountNumber);
 
         // Returnera formaterat saldo om kontot finns
-        return account != null ? account.getFormattedBalance() : null; // ternär operation
+        return account !=null ? account.getFormattedBalance() : null; // ternär operation
     }
 }
