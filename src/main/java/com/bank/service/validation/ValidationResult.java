@@ -1,4 +1,4 @@
-package com.bank.service;
+package com.bank.service.validation;
 
 /**
  * Representerar resultatet av en validering.

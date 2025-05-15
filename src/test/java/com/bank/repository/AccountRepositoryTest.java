@@ -2,8 +2,8 @@ package com.bank.repository;
 // Testar lagring och hämtning av konton
 
 import com.bank.model.Account;
-import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;

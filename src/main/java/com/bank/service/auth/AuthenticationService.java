@@ -1,8 +1,7 @@
-package com.bank.service;
+package com.bank.service.auth;
 
 import com.bank.model.Card;
 import com.bank.repository.CardRepository;
-import com.bank.util.BankConstants;
 import com.bank.util.CardValidator;
 
 import java.util.HashMap;

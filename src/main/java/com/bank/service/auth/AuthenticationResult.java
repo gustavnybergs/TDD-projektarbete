@@ -1,4 +1,4 @@
-package com.bank.service;
+package com.bank.service.auth;
 // En enum för autentiseringsresultat
 
 public enum AuthenticationResult {
