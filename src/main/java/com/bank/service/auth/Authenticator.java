@@ -1,4 +1,4 @@
-package com.bank.service;
+package com.bank.service.auth;
 
 public interface Authenticator {
     AuthenticationResult authenticate(String cardNumber, String pin);

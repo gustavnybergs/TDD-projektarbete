@@ -1,4 +1,6 @@
-package com.bank.service;
+package com.bank.service.transaction;
+
+import com.bank.service.validation.ErrorCode;
 
 public class OperationResult {
     private final boolean success;

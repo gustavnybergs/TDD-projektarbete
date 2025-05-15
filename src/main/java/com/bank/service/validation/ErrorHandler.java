@@ -1,6 +1,8 @@
-package com.bank.service;
+package com.bank.service.validation;
 
 import com.bank.model.Account;
+import com.bank.service.transaction.OperationResult;
+import com.bank.service.account.AccountService;
 
 /**
  * Hanterar felmeddelanden, validering och loggning i bankomatsystemet.

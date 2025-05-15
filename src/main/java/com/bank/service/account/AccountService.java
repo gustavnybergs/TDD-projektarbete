@@ -1,7 +1,11 @@
-package com.bank.service;
+package com.bank.service.account;
 
 import com.bank.model.Account;
 import com.bank.repository.AccountRepository;
+import com.bank.service.validation.ErrorCode;
+import com.bank.service.transaction.OperationResult;
+import com.bank.service.transaction.TransactionResult;
+
 import java.util.Map;
 
 /**

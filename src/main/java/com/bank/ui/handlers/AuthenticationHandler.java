@@ -1,36 +1,32 @@
 package com.bank.ui.handlers;
 
-import com.bank.service.AuthenticationResult;
-import com.bank.service.AuthenticationService;
+import com.bank.service.auth.AuthenticationResult;
+import com.bank.service.auth.AuthenticationService;
 import com.bank.ui.UserInterface;
 import com.bank.util.BankConstants;
-
-import java.util.Scanner;
 
 /**
  * Hanterar autentiseringsprocessen i bankomatgränssnittet.
  * Denna klass ansvarar för att samla in kortnummer och PIN-kod från användaren,
  * verifiera dessa uppgifter via AuthenticationService, och hantera misslyckade
  * inloggningsförsök.
+ *
+ * Uppdaterad för att använda UserInterface istället av hårdkodad Scanner.
  */
-
 public class AuthenticationHandler {
-    private final Scanner scanner;
-    private final AuthenticationService authService;
     private final UserInterface ui;
+    private final AuthenticationService authService;
     private String authenticatedCardNumber;
 
     /**
      * Skapar en ny AuthenticationHandler med angivna beroenden.
      *
-     * @param scanner Scanner för inläsning av användarindata
+     * @param ui UserInterface för användarinteraktion
      * @param authService Service för verifiering av autentiseringsuppgifter
-     * @param ui Användargränssnitt för visning av maskerade uppgifter
      */
-    public AuthenticationHandler(Scanner scanner, AuthenticationService authService, UserInterface ui) {
-        this.scanner = scanner;
-        this.authService = authService;
+    public AuthenticationHandler(UserInterface ui, AuthenticationService authService) {
         this.ui = ui;
+        this.authService = authService;
     }
 
     /**
@@ -45,34 +41,32 @@ public class AuthenticationHandler {
         final int MAX_ATTEMPTS = BankConstants.MAX_AUTHENTICATION_ATTEMPTS;
 
         while (attempts < MAX_ATTEMPTS) {
-            System.out.print("Ange ditt kortnummer (12 siffror): ");
-            String cardNumber = scanner.nextLine().trim();
-
-            System.out.print("Ange din PIN-kod: ");
-            String pin = scanner.nextLine().trim();
+            String cardNumber = ui.getInput("Ange ditt kortnummer (12 siffror): ");
+            String pin = ui.getInput("Ange din PIN-kod: ");
 
             AuthenticationResult result = authService.authenticate(cardNumber, pin);
 
             switch (result) {
                 case SUCCESS:
-                    System.out.println("Inloggning lyckades!");
+                    ui.showMessage("Inloggning lyckades!");
                     authenticatedCardNumber = cardNumber;
                     return true;
                 case INVALID_CARD:
-                    System.out.println("Ogiltigt kortnummer. Försök igen.");
+                    attempts++;
+                    ui.showError("Ogiltigt kortnummer. Försök igen.");
                     break;
                 case WRONG_PIN:
                     attempts++;
-                    System.out.println("Felaktig PIN-kod. Försök igen. " +
+                    ui.showError("Felaktig PIN-kod. Försök igen. " +
                             "Försök kvar: " + (MAX_ATTEMPTS - attempts));
                     break;
                 case CARD_BLOCKED:
-                    System.out.println("Kortet är blockerat. Kontakta kundtjänst.");
+                    ui.showError("Kortet är blockerat. Kontakta kundtjänst.");
                     return false;
             }
         }
 
-        System.out.println("För många felaktiga försök. Kortet är nu blockerat.");
+        ui.showError("För många felaktiga försök. Kortet är nu blockerat.");
         return false;
     }
 
@@ -84,5 +78,4 @@ public class AuthenticationHandler {
     public String getAuthenticatedCardNumber() {
         return authenticatedCardNumber;
     }
-
 }

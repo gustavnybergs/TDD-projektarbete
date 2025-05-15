@@ -4,6 +4,8 @@ package com.bank.service;
 import com.bank.model.Card;
 import com.bank.repository.CardRepository;
 import com.bank.repository.InMemoryCardRepository;
+import com.bank.service.auth.AuthenticationResult;
+import com.bank.service.auth.AuthenticationService;
 import com.bank.ui.ConsoleUI;
 import com.bank.ui.UserInterface;
 import org.junit.jupiter.api.BeforeEach;

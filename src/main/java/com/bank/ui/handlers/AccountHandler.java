@@ -1,30 +1,31 @@
 package com.bank.ui.handlers;
 
 import com.bank.model.Account;
-import com.bank.service.AccountService;
+import com.bank.service.account.AccountService;
+import com.bank.ui.UserInterface;
 
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Hanterar kontooperationer i bankomatgränssnittet.
  * Denna klass ansvarar för att visa kontoinformation, hjälpa användaren att
  * välja mellan tillgängliga konton, och visa saldo för valda konton.
+ *
+ * Uppdaterad för att använda UserInterface istället av hårdkodad Scanner.
  */
-
 public class AccountHandler {
-    private final Scanner scanner;
+    private final UserInterface ui;
     private final AccountService accountService;
     private String authenticatedCardNumber;
 
     /**
      * Skapar en ny AccountHandler med angivna beroenden.
      *
-     * @param scanner Scanner för inläsning av användarindata
+     * @param ui UserInterface för användarinteraktion
      * @param accountService Service för att hämta och hantera kontoinformation
      */
-    public AccountHandler(Scanner scanner, AccountService accountService) {
-        this.scanner = scanner;
+    public AccountHandler(UserInterface ui, AccountService accountService) {
+        this.ui = ui;
         this.accountService = accountService;
     }
 
@@ -45,7 +46,7 @@ public class AccountHandler {
     public void showBalance() {
         Account account = selectAccount();
         if (account != null) {
-            System.out.println("Saldo på konto " + account.getAccountNumber() + ": " +
+            ui.showMessage("Saldo på konto " + account.getAccountNumber() + ": " +
                     account.getFormattedBalance());
         }
     }
@@ -59,18 +60,17 @@ public class AccountHandler {
     public Account selectAccount() {
         List<Account> accounts = getAvailableAccounts();
         if (accounts.isEmpty()) {
-            System.out.println("Inga konton tillgängliga.");
+            ui.showMessage("Inga konton tillgängliga.");
             return null;
         }
 
-        System.out.println("Välj konto:");
+        ui.showMessage("Välj konto:");
         for (int i = 0; i < accounts.size(); i++) {
-            System.out.println((i + 1) + ". Konto " + accounts.get(i).getAccountNumber() +
+            ui.showMessage((i + 1) + ". Konto " + accounts.get(i).getAccountNumber() +
                     " (" + accounts.get(i).getAccountName() + ")");
         }
 
-        System.out.print("Ditt val: ");
-        String input = scanner.nextLine();
+        String input = ui.getInput("Ditt val: ");
 
         try {
             int index = Integer.parseInt(input) - 1;
@@ -79,7 +79,7 @@ public class AccountHandler {
             }
         } catch (NumberFormatException ignored) {}
 
-        System.out.println("Ogiltigt val.");
+        ui.showError("Ogiltigt val.");
         return null;
     }
 
@@ -98,5 +98,4 @@ public class AccountHandler {
         }
         return accountService.getAccountRepository().findByCardNumber(authenticatedCardNumber);
     }
-
 }

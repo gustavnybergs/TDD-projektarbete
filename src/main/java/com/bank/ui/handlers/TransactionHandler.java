@@ -1,14 +1,14 @@
 package com.bank.ui.handlers;
 
 import com.bank.model.Account;
-import com.bank.service.AccountService;
-import com.bank.service.TransactionResult;
+import com.bank.service.account.AccountService;
+import com.bank.service.transaction.TransactionResult;
 import com.bank.integration.SimulatedNoteCounter;
 import com.bank.util.BankConstants;
+import com.bank.ui.UserInterface;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * Hanterar transaktioner i bankomatgränssnittet.
@@ -16,20 +16,20 @@ import java.util.Scanner;
  * genom användning av TransactionResult och OperationResult.
  *
  * Uppdaterad för att använda AccountService för både uttag och insättningar.
+ * Uppdaterad för att använda UserInterface istället av hårdkodad Scanner.
  */
-
 public class TransactionHandler {
-    private final Scanner scanner;
+    private final UserInterface ui;
     private final AccountHandler accountHandler;
 
     /**
      * Skapar en ny TransactionHandler med angivna beroenden.
      *
-     * @param scanner Scanner för inläsning av användarindata
+     * @param ui UserInterface för användarinteraktion
      * @param accountHandler Handler för att välja konton och komma åt AccountService
      */
-    public TransactionHandler(Scanner scanner, AccountHandler accountHandler) {
-        this.scanner = scanner;
+    public TransactionHandler(UserInterface ui, AccountHandler accountHandler) {
+        this.ui = ui;
         this.accountHandler = accountHandler;
     }
 
@@ -43,48 +43,46 @@ public class TransactionHandler {
         if (account == null) return;
 
         // Visa aktuellt saldo
-        System.out.println("Aktuellt saldo: " + account.getFormattedBalance());
+        ui.showMessage("Aktuellt saldo: " + account.getFormattedBalance());
 
         // Låt användaren ange belopp
-        System.out.print("Ange belopp att ta ut: ");
+        String amountStr = ui.getInput("Ange belopp att ta ut: ");
         double amount;
         try {
-            amount = Double.parseDouble(scanner.nextLine());
+            amount = Double.parseDouble(amountStr);
         } catch (NumberFormatException e) {
-            System.out.println("Ogiltigt belopp. Försök igen.");
+            ui.showError("Ogiltigt belopp. Försök igen.");
             return;
         }
 
         AccountService accountService = accountHandler.getAccountService();
 
         // Bekräfta uttaget med användaren - använd konstant
-        System.out.print("Bekräfta uttag av " + amount + " kr? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
-        String confirm = scanner.nextLine().trim().toUpperCase();
+        boolean confirmed = ui.confirmAction("Bekräfta uttag av " + amount + " kr?");
 
-        if (confirm.equals(BankConstants.CONFIRM_YES)) {
+        if (confirmed) {
             // Använd den nya withdraw-metoden med TransactionResult
             TransactionResult result = accountService.withdraw(account.getAccountNumber(), amount);
 
             if (result.isSuccess()) {
-                System.out.println("Uttag genomfört. Ta dina pengar.");
+                ui.showMessage("Uttag genomfört. Ta dina pengar.");
 
                 // Erbjud kvitto - använd konstant
-                System.out.print("Vill du ha kvitto? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
-                String receipt = scanner.nextLine().trim().toUpperCase();
-                if (receipt.equals(BankConstants.CONFIRM_YES)) {
-                    System.out.println("Kvitto: Du tog ut " + amount + " kr från konto " +
+                boolean wantReceipt = ui.confirmAction("Vill du ha kvitto?");
+                if (wantReceipt) {
+                    ui.showMessage("Kvitto: Du tog ut " + amount + " kr från konto " +
                             account.getAccountNumber());
                     // Visa nytt saldo från TransactionResult
                     if (result.getNewBalance().isPresent()) {
-                        System.out.println("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
+                        ui.showMessage("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
                     }
                 }
             } else {
                 // Visa detaljerat felmeddelande från TransactionResult
-                System.out.println("Uttaget misslyckades: " + result.getMessage());
+                ui.showError("Uttaget misslyckades: " + result.getMessage());
             }
         } else {
-            System.out.println("Uttag avbrutet.");
+            ui.showMessage("Uttag avbrutet.");
         }
     }
 
@@ -97,51 +95,49 @@ public class TransactionHandler {
         if (account == null) return;
 
         Map<Integer, Integer> notes = new HashMap<>();
-        System.out.println("Ange antal sedlar för varje valör (0 om inga):");
+        ui.showMessage("Ange antal sedlar för varje valör (0 om inga):");
 
         // Använd konstant istället för hardcoded array
         for (int denomination : BankConstants.VALID_DENOMINATIONS) {
-            System.out.print(denomination + " " + BankConstants.CURRENCY_SYMBOL + ": ");
+            String input = ui.getInput(denomination + " " + BankConstants.CURRENCY_SYMBOL + ": ");
             try {
-                int count = Integer.parseInt(scanner.nextLine());
+                int count = Integer.parseInt(input);
                 if (count > 0) {
                     notes.put(denomination, count);
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Ogiltigt antal för " + denomination + " " + BankConstants.CURRENCY_SYMBOL + " sedlar.");
+                ui.showError("Ogiltigt antal för " + denomination + " " + BankConstants.CURRENCY_SYMBOL + " sedlar.");
                 return;
             }
         }
 
         try {
             int total = new SimulatedNoteCounter().countAndVerify(notes);
-            System.out.println("Totalt att sätta in: " + total + " " + BankConstants.CURRENCY_SYMBOL);
+            ui.showMessage("Totalt att sätta in: " + total + " " + BankConstants.CURRENCY_SYMBOL);
 
             // Använd konstanter för bekräftelse
-            System.out.print("Bekräfta insättning? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
-            String confirm = scanner.nextLine().trim().toUpperCase();
+            boolean confirmed = ui.confirmAction("Bekräfta insättning?");
 
             // Använd AccountService för insättning nu!
             AccountService accountService = accountHandler.getAccountService();
-            TransactionResult result = accountService.deposit(account.getAccountNumber(), notes, confirm.equals(BankConstants.CONFIRM_YES));
+            TransactionResult result = accountService.deposit(account.getAccountNumber(), notes, confirmed);
 
             if (result.isSuccess()) {
-                System.out.print("Vill du ha kvitto? (" + BankConstants.CONFIRM_YES + "/" + BankConstants.CONFIRM_NO + "): ");
-                String receipt = scanner.nextLine().trim().toUpperCase();
-                if (receipt.equals(BankConstants.CONFIRM_YES)) {
-                    System.out.println("Kvitto: Du satte in " + total + " " + BankConstants.CURRENCY_SYMBOL + " på konto " +
+                boolean wantReceipt = ui.confirmAction("Vill du ha kvitto?");
+                if (wantReceipt) {
+                    ui.showMessage("Kvitto: Du satte in " + total + " " + BankConstants.CURRENCY_SYMBOL + " på konto " +
                             account.getAccountNumber());
                     // Visa nytt saldo från TransactionResult
                     if (result.getNewBalance().isPresent()) {
-                        System.out.println("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
+                        ui.showMessage("Nytt saldo: " + String.format("%.2f", result.getNewBalance().get()) + " " + BankConstants.CURRENCY_SYMBOL);
                     }
                 }
             } else {
                 // Visa detaljerat felmeddelande från TransactionResult
-                System.out.println("Insättningen misslyckades: " + result.getMessage());
+                ui.showError("Insättningen misslyckades: " + result.getMessage());
             }
         } catch (IllegalArgumentException e) {
-            System.out.println("Fel: " + e.getMessage());
+            ui.showError("Fel: " + e.getMessage());
         }
     }
 }
